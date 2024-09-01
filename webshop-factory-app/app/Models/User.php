@@ -20,6 +20,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'pricelist_id',
+        'phone',
+        'address',
+        'city',
+        'country',
     ];
 
     /**
@@ -43,5 +48,20 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function pricelist()
+    {
+        return $this->belongsTo(Pricelist::class);
+    }
+
+    public function contractlists()
+    {
+        return $this->hasMany(Contractlist::class);
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
     }
 }
