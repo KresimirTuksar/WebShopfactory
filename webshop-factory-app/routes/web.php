@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryProductController;
 use App\Http\Controllers\SingleProductController;
+use App\Http\Controllers\ProductFilterController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -20,3 +21,6 @@ Route::get('/categories/{category_id}/products', [CategoryProductController::cla
 
 // Ruta za prikaz jednog proizvoda
 Route::get('/products/product/{product_sku}', [SingleProductController::class, 'show']);
+
+// Ruta za filtriranje proizvoda
+Route::get('/products/filter', [ProductFilterController::class, 'filter']);

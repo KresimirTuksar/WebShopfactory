@@ -52,7 +52,7 @@ class User extends Authenticatable
 
     public function pricelist()
     {
-        return $this->belongsTo(Pricelist::class);
+        return $this->belongsTo(Pricelist::class, 'pricelist_id');
     }
 
     public function contractlists()
