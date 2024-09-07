@@ -12,11 +12,18 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Exception;
 
-
+use App\Services\PriceService;
 use App\Services\Pricing\TaxModifier;
 use App\Services\Pricing\DiscountModifier;
 class OrderController extends Controller
 {
+    private $priceService;
+
+    public function __construct(PriceService $priceService)
+    {
+        $this->priceService = $priceService;
+    }
+
     public function store(Request $request)
     {
         // Napravi validator za validaciju ulaznih podataka
@@ -46,9 +53,7 @@ class OrderController extends Controller
 
             // Početne vrijednosti
             $subtotal = 0;
-            $taxRate = 0.25; // 25% poreza
             $discountAmount = 0; // Početni popust
-            $discountRate = 0;   // Stopa popusta
 
             // Kreiraj narudžbu
             $order = new Order();
@@ -71,18 +76,12 @@ class OrderController extends Controller
             foreach ($validated['products'] as $productData) {
                 $product = Product::where('sku', $productData['sku'])->firstOrFail();
                 $quantity = $productData['quantity'];
-                $unitPrice = $product->price; // Default cijena
+
+                // Postavi cijenu
+                $unitPrice = $this->priceService->getProductPrice($product, $user);
 
                 // Provjera contract i pricelist cijena
-                $contract = $product->contractlists()->where('user_id', $user->id)->first();
-                if ($contract) {
-                    $unitPrice = $contract->price;
-                } else {
-                    $pricelistProduct = $product->pricelists()->where('pricelist_id', $user->pricelist_id)->first();
-                    if ($pricelistProduct) {
-                        $unitPrice = $pricelistProduct->pivot->price;
-                    }
-                }
+
 
                 // Ukupna cijena za proizvod
                 $totalPriceForProduct = $unitPrice * $quantity;
@@ -99,12 +98,16 @@ class OrderController extends Controller
                 $subtotal += $totalPriceForProduct;
             }
 
+            $taxRate = config('pricing.tax_rate');
+            $discountRate = config('pricing.discount.rate');
+            $discountThreshold = config('pricing.discount.threshold');
+
             // 1. Primijeni porez koristeći TaxModifier
-            $taxModifier = new TaxModifier(0.25); // 25% poreza
+            $taxModifier = new TaxModifier($taxRate); // 25% poreza
             $taxAmount = $taxModifier->apply($subtotal); // Proslijedi samo $subtotal
 
             // 2. Primijeni popust koristeći DiscountModifier
-            $discountModifier = new DiscountModifier(0.10, 100); // 10% popusta ako je više od 100 eura
+            $discountModifier = new DiscountModifier($discountRate, $discountThreshold); // 10% popusta ako je više od 100 eura
             $discountAmount = $discountModifier->apply($subtotal + $taxAmount); // Proslijedi  $subtotal sa porezom
 
             // Konačna ukupna cijena

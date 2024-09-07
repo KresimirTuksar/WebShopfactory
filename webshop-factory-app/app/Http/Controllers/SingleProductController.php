@@ -6,8 +6,15 @@ use App\Models\Product;
 use App\Models\User;
 use Illuminate\Http\Request;
 
+use App\Services\PriceService;
 class SingleProductController extends Controller
 {
+    private $priceService;
+    public function __construct(PriceService $priceService)
+    {
+        $this->priceService = $priceService;
+    }
+
     public function show(Request $request, $product_sku)
     {
         $user_id = $request->input('user_id', null);
@@ -30,27 +37,9 @@ class SingleProductController extends Controller
             return response()->json(['error' => 'Product not found'], 404);
         }
 
-        // Određivanje cijene
-        $price = $product->price; // Zadana cijena proizvoda
+        // Postavi cijenu
+        $price = $this->priceService->getProductPrice($product, $user);
 
-        if ($user) {
-
-            // Provjeri postoji li ugovoreni popust za korisnika
-            $contract = $product->contractlists()->where('user_id', $user->id)->first();
-            if ($contract) {
-                $price = $contract->price;
-            } else {
-                // Ako nema ugovora, provjeri ima li korisnik dodijeljen cjenik
-                $pricelist = $user->pricelist;
-
-                if ($pricelist) {
-                    $pricelistProduct = $product->pricelists()->where('pricelist_id', $pricelist->id)->first();
-                    if ($pricelistProduct) {
-                        $price = $pricelistProduct->pivot->price;
-                    }
-                }
-            }
-        }
 
         $product->price = $price;
 
