@@ -10,17 +10,8 @@ use App\Models\User;
 use App\Models\Category;
 use Exception;
 
-use App\Services\PriceService;
-
 class CategoryProductController extends Controller
 {
-    private $priceService;
-
-    public function __construct(PriceService $priceService)
-    {
-        $this->priceService = $priceService;
-    }
-
     public function index(Request $request, $category_id)
     {
         try {
@@ -57,8 +48,31 @@ class CategoryProductController extends Controller
             $productList = [];
 
             foreach ($products as $product) {
-                // Postavi cijenu
-                $price = $this->priceService->getProductPrice($product, $user);
+                // Postavi osnovnu cijenu (cijena iz products tablice)
+                $price = $product->price;
+
+                if ($user) {
+                    // Provjeri postoji li ugovor za korisnika i proizvod
+                    $contract = Contractlist::where('user_id', $user->id)
+                        ->where('product_sku', $product->sku)
+                        ->first();
+
+                    if ($contract) {
+                        // Ako postoji ugovor, koristi cijenu iz ugovora
+                        $price = $contract->price;
+                    } else {
+                        // Ako nema ugovora, provjeri postoji li cjenik povezan s korisnikom
+                        $productPricelist = ProductPricelist::where('product_sku', $product->sku)
+                            ->where('pricelist_id', $user->pricelist_id)
+                            ->first();
+
+                        if ($productPricelist) {
+                            // Ako postoji cjenik, koristi cijenu iz cjenika
+                            $price = $productPricelist->price;
+                        }
+                    }
+                }
+
                 // Dodaj proizvod i cijenu u listu za JSON odgovor
                 $productList[] = [
                     'sku' => $product->sku,
