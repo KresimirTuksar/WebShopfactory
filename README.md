@@ -123,6 +123,17 @@ Order metadata is stored using the `OrderMeta` model, which is created through a
 - **Methods:**
   - `apply(float $subtotal): float`: Calculates the discount amount based on the provided subtotal.
 
+### Seeder Instructions
+
+To run the seeder, use the following Artisan command:
+
+```bash
+
+php artisan db:seed --class=DatabaseSeeder
+
+```
+
+Note: DatabaseSeeder is the main seeder that calls other seeders in the application.
 ## Future Enhancements
 
 - **Dynamic Pricing Modifiers:** Implement more flexible and dynamic pricing rules.
